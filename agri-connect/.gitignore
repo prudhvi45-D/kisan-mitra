@@ -1,0 +1,35 @@
+# --- Node.js ---
+node_modules/
+dist/
+uploads/
+
+# --- Environment Variables ---
+.env
+.env.local
+*.env
+
+# --- Python Virtual Env ---
+.venv/
+venv/
+
+# --- Python Cache ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- Build / Logs ---
+*.log
+logs/
+*.pid
+*.seed
+*.dll
+*.so
+
+# --- IDE / Editor ---
+.vscode/
+.idea/
+.DS_Store
+
+# --- OS Files ---
+Thumbs.db
