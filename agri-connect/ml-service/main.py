@@ -94,16 +94,27 @@ def estimate_decay_ratio(img_rgb: np.ndarray, fg_mask: np.ndarray) -> float:
 
 def clip_classify(image: Image.Image) -> dict:
     ensure_models()
-    # Run each prompt separately to avoid any tokenizer padding edge cases
+    # Resize image to standard size for CLIP to avoid tensor shape issues
+    image_resized = image.resize((224, 224))
     logits_list = []
     with torch.no_grad():
         for prompt in label_prompts:
-            inputs = clip_processor(text=[prompt], images=image, return_tensors="pt", padding=True, truncation=True)
-            outputs = clip_model(**inputs)
-            # logits_per_image shape: [1, 1]
-            logits_list.append(outputs.logits_per_image[0, 0].unsqueeze(0))
-        logits = torch.stack(logits_list, dim=1)  # [1, num_labels]
-        probs = torch.softmax(logits, dim=1).cpu().numpy()[0]
+            try:
+                inputs = clip_processor(text=[prompt], images=image_resized, return_tensors="pt", padding=True, truncation=True)
+                outputs = clip_model(**inputs)
+                # logits_per_image shape: [1, 1]
+                logits_list.append(outputs.logits_per_image[0, 0].unsqueeze(0))
+            except Exception as e:
+                print(f"Error processing prompt '{prompt}': {e}")
+                # Fallback: assign neutral score
+                logits_list.append(torch.tensor([[0.0]]))
+        
+        if logits_list:
+            logits = torch.stack(logits_list, dim=1)  # [1, num_labels]
+            probs = torch.softmax(logits, dim=1).cpu().numpy()[0]
+        else:
+            probs = np.ones(len(labels)) / len(labels)
+    
     best_idx = int(np.argmax(probs))
     result = {
         "label": labels[best_idx],

@@ -10,7 +10,6 @@ import axios from 'axios';
 import { config } from '../config';
 import fs from 'fs';
 import path from 'path';
-import fetch, { FormData, Blob } from 'node-fetch';
 
 const upload = multer({ dest: 'uploads/' });
 const router = Router();
@@ -46,6 +45,8 @@ router.post('/listings',
       if (first?.path) {
         const abs = path.resolve(first.path);
         const buf = fs.readFileSync(abs);
+        // Dynamically import node-fetch (ES Module)
+        const { FormData, Blob, default: fetch } = await import('node-fetch' as any);
         const form = new FormData();
         const blob = new Blob([buf], { type: first.mimetype || 'image/jpeg' });
         form.append('file', blob as any, path.basename(abs));
