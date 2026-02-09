@@ -1,0 +1,55 @@
+{
+  "overall": {
+    "accuracy": 0.0,
+    "precision_macro": 0.0,
+    "recall_macro": 0.0,
+    "f1_macro": 0.0,
+    "precision_micro": 0.0,
+    "recall_micro": 0.0,
+    "f1_micro": 0.0,
+    "num_samples": 3,
+    "classes": [
+      "Good/Fresh",
+      "Rotten/Spoiled",
+      "Completely Bad/Decomposed"
+    ]
+  },
+  "per_class": {
+    "Good/Fresh": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 1
+    },
+    "Rotten/Spoiled": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 1
+    },
+    "Completely Bad/Decomposed": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 1
+    }
+  },
+  "confusion_matrix_counts": [
+    [
+      0,
+      1,
+      0
+    ],
+    [
+      1,
+      0,
+      0
+    ],
+    [
+      0,
+      1,
+      0
+    ]
+  ],
+  "confusion_matrix_png": "confusion_matrix.png"
+}
