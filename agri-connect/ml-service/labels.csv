@@ -1,4 +1,0 @@
-image_path,label
-sample_data\Good\good.jpeg,Good/Fresh
-sample_data\Rotten\rotten.jpeg,Rotten/Spoiled
-sample_data\Bad\bad.jpeg,Completely Bad/Decomposed
