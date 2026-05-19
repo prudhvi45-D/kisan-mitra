@@ -1,0 +1,99 @@
+Agri-Connect / Kisan Mitra - End-to-End Project Overview
+======================================================
+
+1. High-Level Architecture
+--------------------------
+The project consists of three main loosely coupled services that interact to provide a Smart Agriculture Marketplace:
+
+[Client (React/Vite)]  <--HTTP/Socket-->  [Server (Node/Express)]  <--HTTP-->  [ML Service (FastAPI)]
+       |                                          |
+       | (Direct API call for Market Data)        | (Mongoose)
+       v                                          v
+[Govt Data API]                             [MongoDB Database]
+
+- Client: Runs on Port 5173. Handles UI, interactions, and direct market data fetching.
+- Server: Runs on Port 5000. Handles Auth, Business Logic, DB interaction, and proxies ML requests.
+- ML Service: Runs on Port 8000. Specialized microservice for Image Processing and Quality Analysis.
+
+2. Component Details
+--------------------
+
+A. Client (Frontend)
+   - Tech: React, TypeScript, Tailwind CSS, Vite.
+   - Authentication: JWT stored in localStorage.
+   - Key Features:
+     - Multi-role support (Farmer, Buyer, Admin).
+     - Real-time Chat (Socket.io) between Farmer and Buyer.
+     - Smart listing upload with AI analysis.
+   - Key Files:
+     - `src/pages/Upload.tsx`: Handles image upload, calls Server for analysis, displays suggested price.
+     - `src/socket.tsx`: Manages real-time connection for chat.
+
+B. Server (Backend)
+   - Tech: Node.js, Express, MongoDB, Socket.io.
+   - Role: Central orchestrator.
+   - Key Responsibilities:
+     - `auth.ts`: Middleware for JWT verification.
+     - `listingController.ts`: 
+       - `/create`: Saves listings with 'PENDING_APPROVAL' status.
+       - `/analyze`: Accepts image upload, forwards to ML Service, calculates price based on quality.
+     - `market-prices`: (Alternative) Server-side proxy for government data.
+
+C. ML Service (AI Engine)
+   - Tech: Python, FastAPI, PyTorch (CLIP Model), Rembg.
+   - Role: Pure computational microservice.
+   - Workflow (`/infer` endpoint):
+     1. Receives image.
+     2. Removes background using `rembg`.
+     3. Estimates physical decay (rot) using Color/HSV analysis on the mask.
+     4. Classifies 'Fresh' vs 'Rotten' using OpenAI's CLIP model.
+     5. Fuses these scores into a final `qualityScore` (0-100).
+
+3. End-to-End Workflows
+-----------------------
+
+Workflow 1: Smart Listing Creation (The "Core" Flow)
+1. User (Farmer) logs in and navigates to "Upload Listing".
+2. User selects Crop (e.g., Tomato) and State/District.
+   - Client fetches Daily Market Prices directly from `api.data.gov.in` to get Min/Max/Avg prices for that region.
+3. User uploads a photo of their produce.
+4. Client sends the image to Server (`POST /api/listings/analyze`).
+5. Server receives image and forwards it to ML Service (`POST http://localhost:8000/infer`).
+6. ML Service processes image:
+   - Detects visual quality (e.g., 85% score, "Fresh").
+   - Returns score to Server.
+7. Server calculates "Suggested Price":
+   - Uses the score and current market averages (or internal logic) to determine a fair price.
+   - Returns `{ qualityScore: 85, suggestedPrice: 45.00 }` to Client.
+8. Client displays the AI-generated Quality Score and Price to the user.
+9. User reviews/edits and clicks "Submit".
+10. Client sends final data to Server (`POST /api/listings/create`).
+11. Server saves Listing to MongoDB with status `PENDING_APPROVAL`.
+
+Workflow 2: Admin Approval (Implied)
+1. Admin logs in.
+2. Fetches pending listings.
+3. Reviews details (including AI score).
+4. Approves listing -> Status becomes `ACTIVE`.
+5. Listing now appears in search results for Buyers.
+
+Workflow 3: Real-time Chat
+1. Buyer sees a listing and clicks "Chat".
+2. Client emits `message:send` via Socket.io.
+3. Server receives event, saves message to MongoDB (`Message` model), and relays to recipient via Socket.io.
+
+4. Data Models (MongoDB)
+------------------------
+- User: { name, email, role, ... }
+- Listing: { title, farmerId, cropType, images[], price, qualityScore, status, ... }
+- Message: { from, to, body, timestamp }
+- PriceRange: { cropName, minPrice, maxPrice, avgPrice, date } (Used for server-side price tracking)
+
+5. Setup Summary
+----------------
+To run the full stack, you must run three separate terminals:
+1. `cd ml-service` -> `python main.py` (Port 8000)
+2. `cd server` -> `npm run dev` (Port 5000)
+3. `cd client` -> `npm run dev` (Port 5173)
+
+This architecture ensures separation of concerns, where heavy ML tasks don't block the Node.js event loop, and the React client stays responsive.
